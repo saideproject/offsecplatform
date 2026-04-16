@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>OffSec Platform | Independent Offensive Security Research</title>
+  <!-- Tailwind CSS v3 + Google Fonts (offline-ready, privacy first) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'sans': ['Inter', 'system-ui', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
+            'mono': ['JetBrains Mono', 'Fira Code', 'SF Mono', 'Menlo', 'monospace'],
+          },
+          colors: {
+            'offsec-dark': '#0a0c10',
+            'offsec-darker': '#050608',
+            'offsec-card': '#11131a',
+            'offsec-border': '#1e232c',
+            'offsec-green': '#00e5a0',
+            'offsec-red': '#ff3a5e',
+            'offsec-cyan': '#2b7fff',
+            'offsec-purple': '#a855f7',
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'glow-text': 'glowPulse 2.5s ease-in-out infinite',
+            'fade-up': 'fadeUp 0.5s ease-out',
+            'fade-in': 'fadeIn 0.4s ease-out',
+            'border-drift': 'borderDrift 6s ease infinite',
+          },
+          keyframes: {
+            glowPulse: {
+              '0%, 100%': { textShadow: '0 0 0px rgba(0,229,160,0)' },
+              '50%': { textShadow: '0 0 10px rgba(0,229,160,0.5)' },
+            },
+            fadeUp: {
+              '0%': { opacity: '0', transform: 'translateY(15px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            borderDrift: {
+              '0%, 100%': { borderColor: '#00e5a0' },
+              '50%': { borderColor: '#2b7fff' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { scroll-behavior: smooth; }
+    body {
+      background: #0a0c10;
+      background-image: 
+        radial-gradient(circle at 20% 40%, rgba(0,229,160,0.02) 0%, transparent 60%),
+        repeating-linear-gradient(0deg, rgba(30,35,44,0.08) 0px, rgba(30,35,44,0.08) 1px, transparent 1px, transparent 40px);
+    }
+    .glass-card {
+      background: rgba(17, 19, 26, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(30, 35, 44, 0.8);
+    }
+    .research-card {
+      transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      position: relative;
+    }
+    .research-card:hover {
+      transform: translateY(-3px);
+      border-color: #00e5a0;
+      box-shadow: 0 12px 25px -12px rgba(0,229,160,0.2);
+    }
+    .terminal-prompt::before {
+      content: '$>';
+      color: #00e5a0;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    .blinking-cursor::after {
+      content: '█';
+      animation: blink 1s step-end infinite;
+      color: #00e5a0;
+      margin-left: 2px;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .subdomain-badge {
+      transition: all 0.2s;
+    }
+    .subdomain-badge:hover {
+      background: #00e5a0;
+      color: #0a0c10;
+      border-color: #00e5a0;
+    }
+    ::-webkit-scrollbar { width: 6px; background: #11131a; }
+    ::-webkit-scrollbar-track { background: #0a0c10; }
+    ::-webkit-scrollbar-thumb { background: #2a2f3c; border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00e5a0; }
+    pre, code {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+  </style>
+</head>
+<body class="bg-offsec-dark text-gray-200 font-sans antialiased">
+
+  <!-- Minimal Navigation - no social links, just research focus -->
+  <nav class="sticky top-0 z-50 border-b border-offsec-border bg-offsec-dark/95 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-5 md:px-8 py-4 flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-offsec-green to-offsec-cyan flex items-center justify-center shadow-md">
+          <span class="text-black font-bold text-sm">⛁</span>
+        </div>
+        <div>
+          <span class="text-xl font-bold tracking-tight"><span class="text-white">OffSec</span><span class="text-offsec-green">Platform</span></span>
+          <div class="text-[10px] font-mono text-offsec-green/60 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-offsec-green"></span> independent researcher · self learner</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 text-sm font-medium">
+        <a href="#research" class="hover:text-offsec-green transition-colors hidden sm:block">Research</a>
+        <a href="#subdomains" class="hover:text-offsec-green transition-colors">Subdomains</a>
+        <a href="#notes" class="hover:text-offsec-green transition-colors hidden sm:block">Notes</a>
+        <a href="#" class="bg-offsec-green/10 border border-offsec-green/40 text-offsec-green px-4 py-1.5 rounded-full text-sm font-semibold hover:bg-offsec-green/20 transition-all">⌨️ Research Lab</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section - independent researcher identity, no social -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-offsec-dark via-offsec-dark/95 to-black opacity-90"></div>
+    <div class="relative max-w-6xl mx-auto px-5 md:px-8 py-20 md:py-28">
+      <div class="flex flex-col lg:flex-row gap-10 items-center">
+        <div class="flex-1 text-center lg:text-left animate-fade-up">
+          <div class="inline-flex mb-4 px-3 py-1 rounded-full border border-offsec-green/30 bg-offsec-green/5 text-xs font-mono text-offsec-green">
+            ⚡ offensive security · independent research
+          </div>
+          <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
+            <span class="text-white">Self‑learner.<br>Researcher.</span>
+            <span class="glow-text bg-gradient-to-r from-offsec-green via-cyan-400 to-offsec-green bg-clip-text text-transparent"> No noise.</span>
+          </h1>
+          <p class="text-gray-400 max-w-xl mt-6 text-base md:text-lg leading-relaxed">
+            I'm an independent offensive security researcher. No social media, no engagement farming — only raw technical research, bug bounty notes, exploit writeups, and recon automation. <span class="text-offsec-green font-mono">offsecplatform.com</span> is my digital lab.
+          </p>
+          <div class="mt-8 flex flex-wrap justify-center lg:justify-start gap-3">
+            <div class="glass-card rounded-lg px-4 py-2 flex items-center gap-2 font-mono text-xs border border-offsec-border">
+              <span class="text-offsec-green animate-pulse">●</span> <span>self-paced deep dives</span>
+            </div>
+            <div class="glass-card rounded-lg px-4 py-2 flex items-center gap-2 font-mono text-xs border border-offsec-border">
+              <span class="text-offsec-cyan">➜</span> <span>~/research/zero-days</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 w-full max-w-md mx-auto lg:mx-0 glass-card rounded-2xl p-5 border border-offsec-border/70 backdrop-blur-sm animate-fade-in">
+          <div class="flex items-center gap-2 border-b border-offsec-border pb-3 mb-3">
+            <div class="flex gap-1.5"><div class="w-3 h-3 rounded-full bg-red-500/70"></div><div class="w-3 h-3 rounded-full bg-yellow-500/70"></div><div class="w-3 h-3 rounded-full bg-green-500/70"></div></div>
+            <span class="text-[11px] font-mono text-gray-500">terminal · offsecplatform.com/research</span>
+          </div>
+          <pre class="text-xs font-mono text-offsec-green/90 overflow-x-auto whitespace-pre-wrap"><span class="text-gray-500">$</span> whoami
+<span class="text-white">> independent offensive researcher · self-learner · no affiliations</span>
+<span class="text-gray-500">$</span> ls -la /knowledge-base/
+drwxr-xr-x  bug-bounty-notes/
+drwxr-xr-x  exploit-dev/
+drwxr-xr-x  recon-frameworks/
+drwxr-xr-x  cve-analysis/
+<span class="text-gray-500">$</span> echo $MOTIVATION
+<span class="text-offsec-green">"Learn, break, document, repeat."</span>
+<span class="blinking-cursor"></span></pre>
+        </div>
+      </div>
+    </div>
+    <div class="absolute -top-40 -right-40 w-80 h-80 bg-offsec-green/5 rounded-full blur-3xl pointer-events-none"></div>
+  </section>
+
+  <!-- Research Principles - no social media, no influencers -->
+  <section class="max-w-7xl mx-auto px-5 md:px-8 py-16">
+    <div class="grid md:grid-cols-3 gap-5 text-center">
+      <div class="bg-offsec-card/40 border border-offsec-border rounded-xl p-5">
+        <div class="text-3xl mb-3">📚</div>
+        <h3 class="font-bold text-offsec-green text-sm tracking-wider">SELF-LEARNER ETHOS</h3>
+        <p class="text-gray-400 text-xs mt-2">No courses, no certifications — just raw practice, source code analysis, and thousands of hours of lab time.</p>
+      </div>
+      <div class="bg-offsec-card/40 border border-offsec-border rounded-xl p-5">
+        <div class="text-3xl mb-3">🔒</div>
+        <h3 class="font-bold text-offsec-green text-sm tracking-wider">ZERO SOCIAL SIGNAL</h3>
+        <p class="text-gray-400 text-xs mt-2">No Twitter, no LinkedIn, no Discord hype. Research speaks for itself through published notes and writeups.</p>
+      </div>
+      <div class="bg-offsec-card/40 border border-offsec-border rounded-xl p-5">
+        <div class="text-3xl mb-3">⚔️</div>
+        <h3 class="font-bold text-offsec-green text-sm tracking-wider">OFFENSIVE MINDSET</h3>
+        <p class="text-gray-400 text-xs mt-2">Thinking like an adversary, automating recon, discovering vulnerabilities, and sharing technical deep dives.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Research Arsenal / Core Topics (independent focus) -->
+  <section id="research" class="max-w-7xl mx-auto px-5 md:px-8 py-12">
+    <div class="text-center mb-10">
+      <span class="text-offsec-green font-mono text-sm bg-offsec-card px-3 py-1 rounded-full border border-offsec-border">⚙️ research verticals</span>
+      <h2 class="text-3xl md:text-4xl font-bold mt-4 text-white">Knowledge <span class="text-offsec-green">Infrastructure</span></h2>
+      <p class="text-gray-400 max-w-2xl mx-auto mt-3 text-sm">Every subdomain hosts a dedicated research silo — no distractions, only technical depth.</p>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="research-card bg-offsec-card border border-offsec-border rounded-xl p-5">
+        <div class="w-10 h-10 rounded-lg bg-offsec-green/10 flex items-center justify-center mb-3"><span class="text-xl">🐛</span></div>
+        <h3 class="font-bold text-white">Bug Bounty Methodology</h3>
+        <p class="text-gray-400 text-xs mt-1">Recon playbooks, parameter discovery, race conditions, and real-world bug bounty notes from private programs.</p>
+        <div class="mt-3 font-mono text-[11px] text-offsec-green/70">notes.offsecplatform.com</div>
+      </div>
+      <div class="research-card bg-offsec-card border border-offsec-border rounded-xl p-5">
+        <div class="w-10 h-10 rounded-lg bg-offsec-green/10 flex items-center justify-center mb-3"><span class="text-xl">💣</span></div>
+        <h3 class="font-bold text-white">Exploit Development</h3>
+        <p class="text-gray-400 text-xs mt-1">Memory corruption, ROP chains, kernel exploits, and weaponized POCs with detailed analysis.</p>
+        <div class="mt-3 font-mono text-[11px] text-offsec-green/70">exploits.offsecplatform.com</div>
+      </div>
+      <div class="research-card bg-offsec-card border border-offsec-border rounded-xl p-5">
+        <div class="w-10 h-10 rounded-lg bg-offsec-green/10 flex items-center justify-center mb-3"><span class="text-xl">🌐</span></div>
+        <h3 class="font-bold text-white">Recon Automation</h3>
+        <p class="text-gray-400 text-xs mt-1">Custom scripts for subdomain enumeration, ASM mapping, cloud asset discovery, and continuous monitoring.</p>
+        <div class="mt-3 font-mono text-[11px] text-offsec-green/70">recon.offsecplatform.com</div>
+      </div>
+      <div class="research-card bg-offsec-card border border-offsec-border rounded-xl p-5">
+        <div class="w-10 h-10 rounded-lg bg-offsec-green/10 flex items-center justify-center mb-3"><span class="text-xl">🔬</span></div>
+        <h3 class="font-bold text-white">CVE Deep Dives</h3>
+        <p class="text-gray-400 text-xs mt-1">Root cause analysis, patch diffing, and proof-of-concept for recent CVEs across web and binary targets.</p>
+        <div class="mt-3 font-mono text-[11px] text-offsec-green/70">labs.offsecplatform.com</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Subdomain Ecosystem (Core: dedicated subdomains for independent research) -->
+  <section id="subdomains" class="max-w-7xl mx-auto px-5 md:px-8 py-16">
+    <div class="text-center mb-10">
+      <span class="text-offsec-green font-mono text-sm bg-offsec-card px-3 py-1 rounded-full border border-offsec-border">🌐 *.offsecplatform.com</span>
+      <h2 class="text-3xl md:text-4xl font-bold mt-4 text-white">Dedicated <span class="text-offsec-green">Research Subdomains</span></h2>
+      <p class="text-gray-400 max-w-2xl mx-auto mt-3 text-sm">Each subdomain is a standalone knowledge hub — no third-party platforms, full ownership.</p>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="subdomain-badge cursor-pointer bg-offsec-card/70 border border-offsec-border rounded-xl p-4 transition-all hover:border-offsec-green">
+        <div class="flex justify-between"><span class="text-2xl">📓</span><span class="text-[10px] font-mono text-offsec-green">primary</span></div>
+        <h3 class="text-lg font-bold mt-2 font-mono">notes.offsecplatform.com</h3>
+        <p class="text-gray-400 text-xs mt-1">Daily bug bounty notes, recon logs, vulnerability writeups, methodology checklists.</p>
+      </div>
+      <div class="subdomain-badge cursor-pointer bg-offsec-card/70 border border-offsec-border rounded-xl p-4 transition-all hover:border-offsec-green">
+        <div class="flex justify-between"><span class="text-2xl">💥</span><span class="text-[10px] font-mono text-offsec-green">exploits</span></div>
+        <h3 class="text-lg font-bold mt-2 font-mono">exploits.offsecplatform.com</h3>
+        <p class="text-gray-400 text-xs mt-1">0-day writeups, exploit chains, RCE payloads, and proof-of-concept repository.</p>
+      </div>
+      <div class="subdomain-badge cursor-pointer bg-offsec-card/70 border border-offsec-border rounded-xl p-4 transition-all hover:border-offsec-green">
+        <div class="flex justify-between"><span class="text-2xl">🕸️</span><span class="text-[10px] font-mono text-offsec-green">recon</span></div>
+        <h3 class="text-lg font-bold mt-2 font-mono">recon.offsecplatform.com</h3>
+        <p class="text-gray-400 text-xs mt-1">Automated recon dashboards, asset tracking, subdomain monitoring, attack surface mapping.</p>
+      </div>
+      <div class="subdomain-badge cursor-pointer bg-offsec-card/70 border border-offsec-border rounded-xl p-4 transition-all hover:border-offsec-green">
+        <div class="flex justify-between"><span class="text-2xl">🧪</span><span class="text-[10px] font-mono text-offsec-green">labs</span></div>
+        <h3 class="text-lg font-bold mt-2 font-mono">labs.offsecplatform.com</h3>
+        <p class="text-gray-400 text-xs mt-1">CTF writeups, fuzzing playground, experimental exploits, and research sandbox.</p>
+      </div>
+      <div class="subdomain-badge cursor-pointer bg-offsec-card/70 border border-offsec-border rounded-xl p-4 transition-all hover:border-offsec-green">
+        <div class="flex justify-between"><span class="text-2xl">📊</span><span class="text-[10px] font-mono text-offsec-green">stats</span></div>
+        <h3 class="text-lg font-bold mt-2 font-mono">stats.offsecplatform.com</h3>
+        <p class="text-gray-400 text-xs mt-1">Research metrics, vulnerability statistics, bug bounty performance, personal hall of fame.</p>
+      </div>
+      <div class="subdomain-badge cursor-pointer bg-offsec-card/70 border border-offsec-border rounded-xl p-4 transition-all hover:border-offsec-green">
+        <div class="flex justify-between"><span class="text-2xl">📖</span><span class="text-[10px] font-mono text-offsec-green">wiki</span></div>
+        <h3 class="text-lg font-bold mt-2 font-mono">wiki.offsecplatform.com</h3>
+        <p class="text-gray-400 text-xs mt-1">Internal knowledge base: cheatsheets, reverse engineering notes, and reference material.</p>
+      </div>
+    </div>
+    <div class="mt-8 flex justify-center">
+      <div class="glass-card rounded-xl px-5 py-2.5 inline-flex items-center gap-2 border border-offsec-green/30 text-xs font-mono">
+        <span>🏴‍☠️</span> full DNS control · self-hosted · no third-party analytics
+      </div>
+    </div>
+  </section>
+
+  <!-- Notes Preview (Bug Bounty Notes Section) -->
+  <section id="notes" class="max-w-7xl mx-auto px-5 md:px-8 py-16 border-y border-offsec-border/40">
+    <div class="grid md:grid-cols-2 gap-10 items-center">
+      <div>
+        <div class="inline-flex items-center gap-2 bg-offsec-card px-3 py-1 rounded-full text-offsec-green text-xs font-mono border border-offsec-border">
+          <span class="w-1.5 h-1.5 bg-offsec-green rounded-full animate-pulse"></span> live notes engine
+        </div>
+        <h2 class="text-3xl font-bold mt-4 text-white">Bug Bounty <span class="text-offsec-green">Notes Repository</span></h2>
+        <p class="text-gray-400 text-sm mt-3 leading-relaxed">Every vulnerability discovered, every recon technique, every failed attempt and breakthrough — documented in markdown. Searchable, categorized, and accessible via subdomain.</p>
+        <ul class="space-y-2 mt-4 text-sm">
+          <li class="flex items-center gap-2"><span class="text-offsec-green text-xs">▹</span> 200+ real-world bug bounty notes</li>
+          <li class="flex items-center gap-2"><span class="text-offsec-green text-xs">▹</span> SQLi, XSS, SSRF, IDOR, Race conditions, RCE chains</li>
+          <li class="flex items-center gap-2"><span class="text-offsec-green text-xs">▹</span> Full-text search across all subdomains</li>
+        </ul>
+        <div class="mt-6 bg-offsec-darker rounded-lg p-3 border border-offsec-border font-mono text-xs">
+          <span class="text-gray-500"># sample note: SSRF bypass techniques</span><br>
+          <span class="text-offsec-green">POST</span> /api/notes { "subdomain": "notes", "title": "AWS metadata SSRF" }<br>
+          <span class="text-gray-400">→ published: 2026-04-16 · 3 bypasses documented</span>
+        </div>
+      </div>
+      <div class="glass-card rounded-xl p-5 border border-offsec-border/70">
+        <div class="flex items-center gap-2 text-offsec-green text-xs border-b border-offsec-border pb-2 mb-3"><span>📄</span> latest research note</div>
+        <div class="space-y-2">
+          <div class="text-xs font-mono text-offsec-green/80"># SSRF via DNS Rebinding & IPv6 quirks</div>
+          <p class="text-gray-300 text-sm">During a private bug bounty program, I discovered an internal SSRF that allowed access to EC2 metadata by leveraging DNS rebinding and partial URL validation bypass...</p>
+          <div class="flex gap-2 text-[11px] font-mono"><span class="text-offsec-green">🏷️ SSRF, cloud-security</span><span class="text-gray-500">published 3d ago</span></div>
+          <div class="border-t border-offsec-border pt-2 mt-2 text-right"><span class="text-xs text-offsec-cyan">notes.offsecplatform.com/ssrf-deepdive →</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Independent Researcher Manifesto / No social callouts -->
+  <section class="max-w-4xl mx-auto px-5 md:px-8 py-16 text-center">
+    <div class="bg-offsec-card/40 border border-offsec-border rounded-2xl p-8">
+      <span class="text-4xl mb-3 block">🎓</span>
+      <h3 class="text-2xl font-bold text-white">Self-Learner Manifesto</h3>
+      <p class="text-gray-400 text-sm max-w-xl mx-auto mt-3 leading-relaxed">
+        No formal education in cybersecurity. No influence from hype cycles. Just thousands of hours of hands-on labs, reading source code, fuzzing, and breaking things in isolation. This platform exists purely for technical documentation and knowledge sharing — without algorithms, engagement metrics, or social validation.
+      </p>
+      <div class="mt-5 text-xs font-mono text-offsec-green/60">— independent offensive researcher, offsecplatform.com</div>
+    </div>
+  </section>
+
+  <!-- Research Roadmap (transparent) -->
+  <section class="max-w-7xl mx-auto px-5 md:px-8 pb-20">
+    <h3 class="text-xl font-bold text-center text-white mb-6">Current Research Roadmap</h3>
+    <div class="flex flex-wrap justify-center gap-3">
+      <div class="bg-offsec-card px-4 py-2 rounded-full text-xs border border-offsec-border"><span class="text-offsec-green">⧗</span> GraphQL introspection & batch attacks</div>
+      <div class="bg-offsec-card px-4 py-2 rounded-full text-xs border border-offsec-border"><span class="text-offsec-green">⧗</span> Kubernetes RBAC misconfigurations</div>
+      <div class="bg-offsec-card px-4 py-2 rounded-full text-xs border border-offsec-border"><span class="text-offsec-green">✓</span> Subdomain takeover automation</div>
+      <div class="bg-offsec-card px-4 py-2 rounded-full text-xs border border-offsec-border"><span class="text-offsec-green">✓</span> Race condition detection toolkit</div>
+      <div class="bg-offsec-card px-4 py-2 rounded-full text-xs border border-offsec-border"><span class="text-offsec-cyan">⧗</span> Binary exploitation (x64 heap grooming)</div>
+    </div>
+    <div class="text-center mt-8 text-[11px] text-gray-600 font-mono">No ETA, no deadlines — deep work only.</div>
+  </section>
+
+  <!-- Contact / PGP-only (no social) -->
+  <footer class="border-t border-offsec-border bg-offsec-dark/90">
+    <div class="max-w-7xl mx-auto px-5 md:px-8 py-8">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
+        <div class="flex items-center gap-2"><span>⚔️</span> OffSec Platform — independent offensive security research</div>
+        <div class="flex gap-4 font-mono">
+          <span class="hover:text-offsec-green transition">🔐 PGP: 0x7F3A9B2C</span>
+          <span>✉️ research@offsecplatform.com</span>
+        </div>
+      </div>
+      <div class="text-center text-[11px] text-gray-600 mt-4 border-t border-offsec-border/30 pt-4">
+        No analytics · No tracking · No social media · Just research.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Simple interactive: subdomain card demo -->
+  <script>
+    const subBadges = document.querySelectorAll('.subdomain-badge');
+    subBadges.forEach(badge => {
+      badge.addEventListener('click', () => {
+        const titleElem = badge.querySelector('h3');
+        if (titleElem) {
+          const subdomain = titleElem.innerText;
+          const notif = document.createElement('div');
+          notif.innerText = `🔗 Research portal: https://${subdomain} (independent researcher's notes)`;
+          notif.className = 'fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-offsec-green/90 text-black text-xs font-mono px-4 py-2 rounded-full shadow-2xl z-50 animate-fade-up';
+          document.body.appendChild(notif);
+          setTimeout(() => notif.remove(), 2200);
+        }
+      });
+    });
+    // Lab button simple alert
+    const labBtn = document.querySelector('a[href="#"]');
+    if (labBtn && labBtn.innerText.includes('Research Lab')) {
+      labBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        alert('⚡ Research lab environment — coming Q3 2026. Full exploit dev sandbox.');
+      });
+    }
+  </script>
+</body>
+</html>
